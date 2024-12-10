@@ -1,0 +1,50 @@
+dependencies installation:
+pip install face_recognition opencv-python pandas
+pip install numpy face_recognition opencv-python pandas
+
+Main code:-
+
+import cv2
+import numpy as np
+import face_recognition
+import os
+import pandas as pd
+from datetime import datetime
+
+KNOWN_FACES_DIR = "known_faces"
+ATTENDANCE_FILE = "attendance.csv"
+
+def load_known_faces():
+    known_face_encodings = []
+    known_face_names = []
+
+    for file_name in os.listdir(KNOWN_FACES_DIR):
+        image_path = os.path.join(KNOWN_FACES_DIR, file_name)
+        image = face_recognition.load_image_file(image_path)
+        encodings = face_recognition.face_encodings(image)
+        if encodings:
+            known_face_encodings.append(encodings[0])
+            name = os.path.splitext(file_name)[0]
+            known_face_names.append(name)
+    return known_face_encodings, known_face_names
+
+
+def mark_attendance(name):
+    now = datetime.now()
+    date_string = now.strftime("%Y-%m-%d")
+    time_string = now.strftime("%H:%M:%S")
+    
+    if not os.path.exists(ATTENDANCE_FILE):
+        df = pd.DataFrame(columns=["Name", "Date", "Time"])
+    else:
+        df = pd.read_csv(ATTENDANCE_FILE)
+
+    if not ((df["Name"] == name) & (df["Date"] == date_string)).any():
+        df = df.append({"Name": name, "Date": date_string, "Time": time_string}, ignore_index=True)
+        df.to_csv(ATTENDANCE_FILE, index=False)
+
+
+known_face_encodings, known_face_names = load_known_faces()
+
+print("Opening webcam...")
+video_capture = cv2.VideoCapture(0)
